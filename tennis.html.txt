@@ -1,0 +1,87 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Tennis</title>
+<link rel="stylesheet" href="styles.css">
+<style>
+canvas{display:block;margin:40px auto;border:1px solid rgba(255,255,255,.15)}
+</style>
+</head>
+<body>
+
+<canvas id="game" width="900" height="520"></canvas>
+
+<script>
+const canvas = document.getElementById("game");
+const ctx = canvas.getContext("2d");
+
+let playerY=220, aiY=220;
+let ballX=450, ballY=260;
+let ballVX=6, ballVY=3;
+let playerScore=0, aiScore=0;
+let difficulty=1;
+
+function drawCourt(){
+  ctx.strokeStyle="rgba(255,255,255,.2)";
+  ctx.lineWidth=2;
+  ctx.strokeRect(70,46,760,428);
+  ctx.strokeRect(120,46,660,428);
+  ctx.beginPath();
+  ctx.moveTo(450,46); ctx.lineTo(450,474);
+  ctx.moveTo(120,260); ctx.lineTo(780,260);
+  ctx.stroke();
+}
+
+function draw(){
+  ctx.clearRect(0,0,900,520);
+  drawCourt();
+
+  ctx.fillStyle="white";
+  ctx.fillRect(20,playerY,12,90);
+  ctx.fillRect(868,aiY,12,90);
+
+  ctx.beginPath();
+  ctx.arc(ballX,ballY,7,0,Math.PI*2);
+  ctx.fill();
+
+  ctx.fillText(playerScore,400,30);
+  ctx.fillText(aiScore,480,30);
+}
+
+function update(){
+  ballX+=ballVX;
+  ballY+=ballVY;
+
+  if(ballY<0||ballY>520) ballVY*=-1;
+
+  if(ballX<32 && ballY>playerY && ballY<playerY+90) ballVX*=-1;
+  if(ballX>868 && ballY>aiY && ballY<aiY+90) ballVX*=-1;
+
+  if(ballX<0){ aiScore++; reset(); }
+  if(ballX>900){ playerScore++; reset(); }
+
+  aiY += ((ballY-aiY-45)*0.05*difficulty);
+}
+
+function reset(){
+  ballX=450; ballY=260;
+  ballVX=-ballVX;
+}
+
+function loop(){
+  update();
+  draw();
+  requestAnimationFrame(loop);
+}
+
+canvas.addEventListener("mousemove",e=>{
+  playerY=e.offsetY-45;
+});
+
+loop();
+</script>
+
+</body>
+</html>

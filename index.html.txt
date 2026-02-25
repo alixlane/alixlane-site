@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Alix Lane</title>
+<meta name="description" content="Alix Lane — Sales management and commercial operations.">
+<link rel="stylesheet" href="styles.css">
+<meta name="theme-color" content="#0b0b0b">
+</head>
+
+<body>
+
+<header class="nav">
+  <div class="container nav-inner">
+    <div class="logo">ALIX LANE</div>
+    <div class="nav-links">
+      <a href="#about">About</a>
+      <a href="#work">Work</a>
+      <a href="#approach">Approach</a>
+      <a href="#contact">Contact</a>
+      <a href="tennis.html">Tennis</a>
+    </div>
+  </div>
+</header>
+
+<main>
+
+<section class="hero">
+  <div class="container hero-grid">
+    <div class="hero-text">
+      <h1>Sales management shaped by discipline and execution.</h1>
+      <p>
+        I work at the intersection of commercial growth and operational rigor.
+        My background spans sports hospitality leadership and beverage sales.
+      </p>
+    </div>
+    <div class="hero-image">
+      <img src="headshot.jpg" alt="Portrait of Alix Lane">
+    </div>
+  </div>
+</section>
+
+<section id="about" class="section">
+  <div class="container narrow">
+    <h2>About</h2>
+    <p>
+      I am a New Jersey–based sales and management professional with experience
+      supporting commercial teams in structured, performance-driven environments.
+    </p>
+  </div>
+</section>
+
+<section id="work" class="section alt">
+  <div class="container narrow">
+    <h2>Work</h2>
+    <p>
+      My work has included contract renewals, merchandising standards, account communication,
+      and frontline coordination in both CPG and sports operations environments.
+    </p>
+  </div>
+</section>
+
+<section id="approach" class="section">
+  <div class="container narrow">
+    <h2>Approach</h2>
+    <ul>
+      <li>Clarity in expectations</li>
+      <li>Process discipline</li>
+      <li>Operational accountability</li>
+      <li>Respect for systems</li>
+    </ul>
+  </div>
+</section>
+
+<section id="contact" class="section alt">
+  <div class="container narrow">
+    <h2>Contact</h2>
+    <p>
+      <a href="mailto:send@alixlane.info">send@alixlane.info</a>
+    </p>
+  </div>
+</section>
+
+</main>
+
+<footer class="footer">
+  © <span id="year"></span> Alix Lane
+</footer>
+
+<script>
+document.getElementById("year").textContent = new Date().getFullYear();
+</script>
+
+</body>
+</html>
