@@ -1,87 +1,485 @@
 <!doctype html>
-<html>
+<html lang="en">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Tennis</title>
-<link rel="stylesheet" href="styles.css">
-<style>
-canvas{display:block;margin:40px auto;border:1px solid rgba(255,255,255,.15)}
-</style>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Tennis · Alix Lane</title>
+  <meta name="description" content="A pastel arcade tennis game on alixlane.info." />
+  <link rel="stylesheet" href="styles.css" />
+  <style>
+    .game-shell { padding: 42px 0 72px; }
+    .game-card {
+      padding: 24px;
+      background: rgba(255,253,251,0.85);
+      border: 1px solid rgba(232,214,214,0.9);
+      border-radius: 28px;
+      box-shadow: 0 18px 40px rgba(120,83,95,0.10);
+    }
+    .game-head { display:grid; gap:10px; margin-bottom:18px; }
+    .game-head h1 {
+      font-family: var(--serif);
+      font-size: clamp(2.2rem, 4.8vw, 4rem);
+      line-height: .98;
+    }
+    .game-head p { margin:0; color: var(--muted); max-width: 62ch; }
+    .canvas-shell {
+      overflow:hidden;
+      border-radius: 24px;
+      border:1px solid rgba(232,214,214,0.9);
+      background: linear-gradient(180deg, rgba(255,240,191,0.35), rgba(217,239,232,0.40));
+    }
+    canvas { display:block; width:100%; height:auto; touch-action:none; }
+    .game-ui {
+      display:flex; flex-wrap:wrap; justify-content:space-between; gap:14px;
+      align-items:center; padding:14px 16px; background: rgba(255,253,251,0.9);
+      border-top:1px solid rgba(232,214,214,0.9);
+    }
+    .ui-left, .ui-right { display:flex; flex-wrap:wrap; gap:12px; align-items:center; }
+    .pill, .select, .btn {
+      border:1px solid rgba(232,214,214,1);
+      background: rgba(255,255,255,0.9);
+      color: var(--ink);
+      border-radius: 999px;
+      min-height: 42px;
+      padding: 0 14px;
+      font: inherit;
+    }
+    .pill { display:inline-flex; align-items:center; }
+    .btn { cursor:pointer; }
+    .meter {
+      display:flex; gap:10px; align-items:center;
+    }
+    .meter-bar {
+      width: 140px; height: 10px; overflow:hidden;
+      border-radius:999px; border:1px solid rgba(232,214,214,1);
+      background: rgba(255,255,255,0.85);
+    }
+    .meter-fill {
+      width:0%; height:100%;
+      background: linear-gradient(90deg, #ffd8cb, #f7d9e6, #e8defa);
+    }
+    .score { font-weight: 800; }
+    .touch-controls { display:none; gap:8px; }
+    .tiny-note { margin-top:12px; color: var(--muted); font-size: .92rem; }
+    @media (pointer: coarse) {
+      .touch-controls { display:flex; }
+    }
+  </style>
 </head>
 <body>
+  <header class="site-header">
+    <div class="container header-inner">
+      <a class="brand" href="index.html">alix lane</a>
+      <nav class="site-nav" aria-label="Primary">
+        <a href="index.html#about">about</a>
+        <a href="index.html#work">work</a>
+        <a href="index.html#contact">contact</a>
+        <a href="tennis.html">tennis</a>
+      </nav>
+    </div>
+  </header>
 
-<canvas id="game" width="900" height="520"></canvas>
+  <main class="game-shell">
+    <div class="container">
+      <section class="game-card">
+        <div class="game-head">
+          <p class="section-label">mini game</p>
+          <h1>cute little tennis break.</h1>
+          <p>Press and hold on the court to charge your serve, then release. Desktop works with mouse or trackpad. Mobile works with touch and the optional controls below.</p>
+        </div>
+
+        <div class="canvas-shell">
+          <canvas id="game" width="900" height="520" aria-label="Tennis game canvas"></canvas>
+          <div class="game-ui">
+            <div class="ui-left">
+              <div class="pill score">You <span id="pScore">0</span>&nbsp;—&nbsp;<span id="aScore">0</span> AI</div>
+              <div class="pill" id="status">Press and hold to serve.</div>
+            </div>
+            <div class="ui-right">
+              <div class="meter">
+                <span class="section-label" style="margin:0;">serve</span>
+                <div class="meter-bar"><div class="meter-fill" id="meterFill"></div></div>
+                <span id="meterPct">0%</span>
+              </div>
+              <select class="select" id="difficulty">
+                <option value="easy">easy</option>
+                <option value="medium" selected>medium</option>
+                <option value="hard">hard</option>
+              </select>
+              <div class="touch-controls">
+                <button class="btn" id="leftBtn" type="button">◀ left</button>
+                <button class="btn" id="rightBtn" type="button">right ▶</button>
+              </div>
+              <button class="btn" id="restartBtn" type="button">restart</button>
+              <button class="btn" id="pauseBtn" type="button">pause</button>
+            </div>
+          </div>
+        </div>
+        <p class="tiny-note">First to 7 wins. The court is more tennis-realistic, even if the gameplay is still arcade-style.</p>
+      </section>
+    </div>
+  </main>
+
+  <footer class="site-footer">
+    <div class="container footer-inner">
+      <p>© <span id="year"></span> alix lane</p>
+      <a href="index.html">back home</a>
+    </div>
+  </footer>
 
 <script>
-const canvas = document.getElementById("game");
-const ctx = canvas.getContext("2d");
+(() => {
+  const canvas = document.getElementById("game");
+  const ctx = canvas.getContext("2d");
 
-let playerY=220, aiY=220;
-let ballX=450, ballY=260;
-let ballVX=6, ballVY=3;
-let playerScore=0, aiScore=0;
-let difficulty=1;
+  const pScoreEl = document.getElementById("pScore");
+  const aScoreEl = document.getElementById("aScore");
+  const statusEl = document.getElementById("status");
+  const restartBtn = document.getElementById("restartBtn");
+  const pauseBtn = document.getElementById("pauseBtn");
+  const leftBtn = document.getElementById("leftBtn");
+  const rightBtn = document.getElementById("rightBtn");
+  const difficultySel = document.getElementById("difficulty");
+  const meterFill = document.getElementById("meterFill");
+  const meterPct = document.getElementById("meterPct");
+  document.getElementById("year").textContent = new Date().getFullYear();
 
-function drawCourt(){
-  ctx.strokeStyle="rgba(255,255,255,.2)";
-  ctx.lineWidth=2;
-  ctx.strokeRect(70,46,760,428);
-  ctx.strokeRect(120,46,660,428);
-  ctx.beginPath();
-  ctx.moveTo(450,46); ctx.lineTo(450,474);
-  ctx.moveTo(120,260); ctx.lineTo(780,260);
-  ctx.stroke();
-}
+  const W = () => canvas.width;
+  const H = () => canvas.height;
+  const clamp = (v, min, max) => Math.max(min, Math.min(max, v));
 
-function draw(){
-  ctx.clearRect(0,0,900,520);
-  drawCourt();
+  function court() {
+    const marginX = 72;
+    const marginY = 46;
+    const left = marginX;
+    const right = W() - marginX;
+    const top = marginY;
+    const bottom = H() - marginY;
+    const midX = (left + right) / 2;
+    const midY = (top + bottom) / 2;
+    const doublesW = right - left;
+    const singlesW = doublesW * 0.82;
+    const singlesLeft = midX - singlesW / 2;
+    const singlesRight = midX + singlesW / 2;
+    const halfH = (bottom - top) / 2;
+    const serviceFromNet = halfH * 0.54;
+    const serviceTop = midY - serviceFromNet;
+    const serviceBot = midY + serviceFromNet;
+    return { left, right, top, bottom, midX, midY, singlesLeft, singlesRight, serviceTop, serviceBot, centerMarkLen: 12 };
+  }
 
-  ctx.fillStyle="white";
-  ctx.fillRect(20,playerY,12,90);
-  ctx.fillRect(868,aiY,12,90);
+  const NET_W = 4;
+  const PADDLE_W = 14;
+  const PADDLE_H = 96;
+  const BALL_R = 7;
+  const WIN_SCORE = 7;
+  const BASE_BALL_SPEED = 6.3;
+  const MAX_BALL_SPEED = 12.8;
+  const PADDLE_SPEED = 10.2;
 
-  ctx.beginPath();
-  ctx.arc(ballX,ballY,7,0,Math.PI*2);
-  ctx.fill();
+  const DIFF = {
+    easy:   { aiSpeed: 6.2,  predict: 3.0,  jitter: 26, speedGain: 0.28 },
+    medium: { aiSpeed: 8.2,  predict: 5.5,  jitter: 14, speedGain: 0.35 },
+    hard:   { aiSpeed: 10.4, predict: 8.2,  jitter: 6,  speedGain: 0.42 }
+  };
+  let diff = DIFF.medium;
 
-  ctx.fillText(playerScore,400,30);
-  ctx.fillText(aiScore,480,30);
-}
+  difficultySel.addEventListener("change", () => {
+    diff = DIFF[difficultySel.value] || DIFF.medium;
+    statusEl.textContent = awaitingServe ? "Press and hold to serve." : "Playing…";
+  });
 
-function update(){
-  ballX+=ballVX;
-  ballY+=ballVY;
+  let running = true;
+  let awaitingServe = true;
+  let lastTs = 0;
+  let charging = false;
+  let charge = 0;
+  let chargeDir = 1;
+  let serveAimY = null;
 
-  if(ballY<0||ballY>520) ballVY*=-1;
+  const player = { x: 24, y: 0, score: 0, targetY: 0 };
+  const ai = { x: 0, y: 0, score: 0 };
+  const ball = { x: 0, y: 0, vx: 0, vy: 0, speed: BASE_BALL_SPEED };
 
-  if(ballX<32 && ballY>playerY && ballY<playerY+90) ballVX*=-1;
-  if(ballX>868 && ballY>aiY && ballY<aiY+90) ballVX*=-1;
+  let touchLeft = false;
+  let touchRight = false;
+  let pointerActive = false;
 
-  if(ballX<0){ aiScore++; reset(); }
-  if(ballX>900){ playerScore++; reset(); }
+  function setMeter(v) {
+    const pct = Math.round(v * 100);
+    meterFill.style.width = pct + "%";
+    meterPct.textContent = pct + "%";
+  }
 
-  aiY += ((ballY-aiY-45)*0.05*difficulty);
-}
+  function resetPositions(servingToAI = true) {
+    player.y = (H() - PADDLE_H) / 2;
+    player.targetY = player.y + PADDLE_H / 2;
+    ai.x = W() - 24 - PADDLE_W;
+    ai.y = (H() - PADDLE_H) / 2;
+    ball.x = W() / 2;
+    ball.y = H() / 2;
+    ball.speed = BASE_BALL_SPEED;
+    ball.vx = servingToAI ? ball.speed : -ball.speed;
+    ball.vy = (Math.random() * 2 - 1) * (ball.speed * 0.55);
+    awaitingServe = true;
+    charging = false;
+    charge = 0;
+    chargeDir = 1;
+    serveAimY = null;
+    setMeter(0);
+    statusEl.textContent = "Press and hold to serve.";
+  }
 
-function reset(){
-  ballX=450; ballY=260;
-  ballVX=-ballVX;
-}
+  function hardRestart() {
+    player.score = 0;
+    ai.score = 0;
+    pScoreEl.textContent = "0";
+    aScoreEl.textContent = "0";
+    running = true;
+    awaitingServe = true;
+    pauseBtn.textContent = "pause";
+    resetPositions(true);
+  }
 
-function loop(){
-  update();
-  draw();
-  requestAnimationFrame(loop);
-}
+  function beginCharge(aimY) {
+    if (!running || !awaitingServe) return;
+    charging = true;
+    serveAimY = aimY;
+    statusEl.textContent = "Charging…";
+  }
 
-canvas.addEventListener("mousemove",e=>{
-  playerY=e.offsetY-45;
-});
+  function endChargeAndServe() {
+    if (!running || !awaitingServe || !charging) return;
+    charging = false;
+    awaitingServe = false;
+    const min = BASE_BALL_SPEED * 0.92;
+    const max = BASE_BALL_SPEED * 1.65;
+    const spd = min + (max - min) * charge;
+    const pCenter = player.y + PADDLE_H / 2;
+    const y = serveAimY ?? pCenter;
+    const hit = (y - pCenter) / (PADDLE_H / 2);
+    const angle = clamp(hit, -1, 1) * (Math.PI / 5.0);
+    ball.speed = spd;
+    ball.vx = +ball.speed * Math.cos(angle);
+    ball.vy = ball.speed * Math.sin(angle);
+    statusEl.textContent = "Playing…";
+  }
 
-loop();
+  function drawCourtLines() {
+    const c = court();
+    ctx.save();
+    ctx.lineWidth = 2;
+    ctx.strokeStyle = "rgba(126, 98, 108, 0.22)";
+    ctx.strokeRect(c.left, c.top, c.right - c.left, c.bottom - c.top);
+    ctx.beginPath();
+    ctx.moveTo(c.singlesLeft, c.top);
+    ctx.lineTo(c.singlesLeft, c.bottom);
+    ctx.moveTo(c.singlesRight, c.top);
+    ctx.lineTo(c.singlesRight, c.bottom);
+    ctx.stroke();
+    ctx.strokeStyle = "rgba(126, 98, 108, 0.18)";
+    ctx.beginPath();
+    ctx.moveTo(c.singlesLeft, c.serviceTop);
+    ctx.lineTo(c.singlesRight, c.serviceTop);
+    ctx.moveTo(c.singlesLeft, c.serviceBot);
+    ctx.lineTo(c.singlesRight, c.serviceBot);
+    ctx.moveTo(c.midX, c.serviceTop);
+    ctx.lineTo(c.midX, c.serviceBot);
+    ctx.moveTo(c.midX, c.top);
+    ctx.lineTo(c.midX, c.top + c.centerMarkLen);
+    ctx.moveTo(c.midX, c.bottom);
+    ctx.lineTo(c.midX, c.bottom - c.centerMarkLen);
+    ctx.stroke();
+    ctx.restore();
+  }
+
+  function draw() {
+    ctx.clearRect(0, 0, W(), H());
+    const grad = ctx.createLinearGradient(0, 0, 0, H());
+    grad.addColorStop(0, "rgba(255,240,191,0.55)");
+    grad.addColorStop(1, "rgba(217,239,232,0.65)");
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, 0, W(), H());
+    drawCourtLines();
+    ctx.fillStyle = "rgba(126,98,108,0.22)";
+    const netX = (W() - NET_W) / 2;
+    for (let y = 0; y < H(); y += 20) ctx.fillRect(netX, y, NET_W, 12);
+    ctx.fillStyle = "#5c4a58";
+    ctx.fillRect(player.x, player.y, PADDLE_W, PADDLE_H);
+    ctx.fillRect(ai.x, ai.y, PADDLE_W, PADDLE_H);
+    ctx.beginPath();
+    ctx.fillStyle = "#ffffff";
+    ctx.arc(ball.x, ball.y, BALL_R, 0, Math.PI * 2);
+    ctx.fill();
+    if (awaitingServe && charging && serveAimY !== null) {
+      ctx.beginPath();
+      ctx.fillStyle = "rgba(92,74,88,0.35)";
+      ctx.arc(player.x + PADDLE_W + 18, serveAimY, 4, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  }
+
+  function paddleCollision(p) {
+    return ball.x - BALL_R < p.x + PADDLE_W && ball.x + BALL_R > p.x && ball.y + BALL_R > p.y && ball.y - BALL_R < p.y + PADDLE_H;
+  }
+
+  function reflectFromPaddle(p, isPlayer) {
+    const hit = ((ball.y - (p.y + PADDLE_H / 2)) / (PADDLE_H / 2));
+    const angle = clamp(hit, -1, 1) * (Math.PI / 3.2);
+    const dir = isPlayer ? 1 : -1;
+    ball.speed = Math.min(MAX_BALL_SPEED, ball.speed + diff.speedGain);
+    ball.vx = dir * ball.speed * Math.cos(angle);
+    ball.vy = ball.speed * Math.sin(angle);
+    ball.x = isPlayer ? (p.x + PADDLE_W + BALL_R + 1) : (p.x - BALL_R - 1);
+  }
+
+  function pointToPlayer() {
+    player.score += 1;
+    pScoreEl.textContent = String(player.score);
+    statusEl.textContent = "Point: You.";
+    checkWin();
+    resetPositions(true);
+  }
+
+  function pointToAI() {
+    ai.score += 1;
+    aScoreEl.textContent = String(ai.score);
+    statusEl.textContent = "Point: AI.";
+    checkWin();
+    resetPositions(false);
+  }
+
+  function checkWin() {
+    if (player.score >= WIN_SCORE) {
+      running = false; awaitingServe = true; charging = false; setMeter(0); statusEl.textContent = "You win.";
+    } else if (ai.score >= WIN_SCORE) {
+      running = false; awaitingServe = true; charging = false; setMeter(0); statusEl.textContent = "AI wins.";
+    }
+  }
+
+  function updateServeMeter(dt) {
+    if (!awaitingServe || !charging) return;
+    const rate = 0.022 * dt;
+    charge += rate * chargeDir;
+    if (charge >= 1) { charge = 1; chargeDir = -1; }
+    if (charge <= 0) { charge = 0; chargeDir = 1; }
+    setMeter(charge);
+  }
+
+  function updateAI(dt) {
+    const aiCenter = ai.y + PADDLE_H / 2;
+    const jitter = (Math.random() * 2 - 1) * diff.jitter;
+    const target = ball.y + (ball.vy * diff.predict) + jitter;
+    const diffY = target - aiCenter;
+    const maxMove = diff.aiSpeed * dt;
+    ai.y += clamp(diffY * 0.08, -maxMove, maxMove);
+    ai.y = clamp(ai.y, 0, H() - PADDLE_H);
+  }
+
+  function updatePlayer(dt) {
+    if (touchLeft) player.targetY -= PADDLE_SPEED * dt;
+    if (touchRight) player.targetY += PADDLE_SPEED * dt;
+    const centerY = player.y + PADDLE_H / 2;
+    const diffY = player.targetY - centerY;
+    player.y += clamp(diffY * 0.18, -12 * dt, 12 * dt);
+    player.y = clamp(player.y, 0, H() - PADDLE_H);
+  }
+
+  function updateBall(dt) {
+    if (awaitingServe) return;
+    ball.x += ball.vx * dt;
+    ball.y += ball.vy * dt;
+    if (ball.y - BALL_R <= 0) { ball.y = BALL_R + 1; ball.vy *= -1; }
+    else if (ball.y + BALL_R >= H()) { ball.y = H() - BALL_R - 1; ball.vy *= -1; }
+    if (paddleCollision(player) && ball.vx < 0) reflectFromPaddle(player, true);
+    if (paddleCollision(ai) && ball.vx > 0) reflectFromPaddle(ai, false);
+    if (ball.x + BALL_R < 0) pointToAI();
+    if (ball.x - BALL_R > W()) pointToPlayer();
+  }
+
+  function tick(ts) {
+    if (!lastTs) lastTs = ts;
+    const rawDt = (ts - lastTs) / 16.6667;
+    const dt = clamp(rawDt, 0.5, 1.8);
+    lastTs = ts;
+    if (running) {
+      updateServeMeter(dt);
+      updatePlayer(dt);
+      updateAI(dt);
+      updateBall(dt);
+    }
+    draw();
+    requestAnimationFrame(tick);
+  }
+
+  function setTargetFromClientY(clientY) {
+    const rect = canvas.getBoundingClientRect();
+    const y = (clientY - rect.top) * (canvas.height / rect.height);
+    player.targetY = clamp(y, PADDLE_H / 2, H() - PADDLE_H / 2);
+    return y;
+  }
+
+  canvas.addEventListener("pointerdown", (e) => {
+    if (!running && (player.score >= WIN_SCORE || ai.score >= WIN_SCORE)) return;
+    canvas.setPointerCapture(e.pointerId);
+    pointerActive = true;
+    const aimY = setTargetFromClientY(e.clientY);
+    if (awaitingServe) beginCharge(aimY);
+  });
+
+  canvas.addEventListener("pointermove", (e) => {
+    if (!pointerActive) return;
+    const y = setTargetFromClientY(e.clientY);
+    if (awaitingServe && charging) serveAimY = y;
+  });
+
+  canvas.addEventListener("pointerup", () => {
+    pointerActive = false;
+    if (awaitingServe) endChargeAndServe();
+  });
+
+  canvas.addEventListener("pointercancel", () => {
+    pointerActive = false;
+    charging = false;
+    charge = 0;
+    setMeter(0);
+    if (awaitingServe) statusEl.textContent = "Press and hold to serve.";
+  });
+
+  window.addEventListener("keydown", (e) => {
+    if (e.code === "Space") {
+      e.preventDefault();
+      if (player.score >= WIN_SCORE || ai.score >= WIN_SCORE) return;
+      running = !running;
+      pauseBtn.textContent = running ? "pause" : "resume";
+      statusEl.textContent = running ? (awaitingServe ? "Press and hold to serve." : "Playing…") : "Paused.";
+    }
+  });
+
+  restartBtn.addEventListener("click", hardRestart);
+  pauseBtn.addEventListener("click", () => {
+    if (player.score >= WIN_SCORE || ai.score >= WIN_SCORE) return;
+    running = !running;
+    pauseBtn.textContent = running ? "pause" : "resume";
+    statusEl.textContent = running ? (awaitingServe ? "Press and hold to serve." : "Playing…") : "Paused.";
+  });
+
+  const setTouchBtn = (btn, dir) => {
+    const down = () => { if (dir < 0) touchLeft = true; else touchRight = true; };
+    const up = () => { if (dir < 0) touchLeft = false; else touchRight = false; };
+    btn.addEventListener("pointerdown", (e) => { e.preventDefault(); down(); });
+    btn.addEventListener("pointerup", (e) => { e.preventDefault(); up(); });
+    btn.addEventListener("pointercancel", up);
+    btn.addEventListener("pointerleave", up);
+  };
+  if (leftBtn && rightBtn) {
+    setTouchBtn(leftBtn, -1);
+    setTouchBtn(rightBtn, +1);
+  }
+
+  resetPositions(true);
+  requestAnimationFrame(tick);
+})();
 </script>
-
 </body>
 </html>
